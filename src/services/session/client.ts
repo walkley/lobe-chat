@@ -4,8 +4,9 @@ import { INBOX_SESSION_ID } from '@/const/session';
 import { SessionModel } from '@/database/client/models/session';
 import { SessionGroupModel } from '@/database/client/models/sessionGroup';
 import { UserModel } from '@/database/client/models/user';
-import { useGlobalStore } from '@/store/global';
-import { LobeAgentConfig } from '@/types/agent';
+import { useUserStore } from '@/store/user';
+import { LobeAgentChatConfig, LobeAgentConfig } from '@/types/agent';
+import { MetaData } from '@/types/meta';
 import {
   ChatSessionList,
   LobeAgentSession,
@@ -79,8 +80,9 @@ export class ClientService implements ISessionService {
   async countSessions() {
     return SessionModel.count();
   }
+
   async hasSessions() {
-    return (await this.countSessions()) === 0;
+    return (await this.countSessions()) !== 0;
   }
 
   async searchSessions(keyword: string) {
@@ -95,12 +97,40 @@ export class ClientService implements ISessionService {
     return SessionModel.update(id, { ...data, pinned });
   }
 
-  async updateSessionConfig(activeId: string, config: DeepPartial<LobeAgentConfig>) {
+  async updateSessionConfig(
+    activeId: string,
+    config: DeepPartial<LobeAgentConfig>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _?: AbortSignal,
+  ) {
+    // TODO: 需要删除这部分处理逻辑
+    // 后续直接给用户创建一个 inbox 的 session
     if (activeId === INBOX_SESSION_ID) {
-      return useGlobalStore.getState().updateDefaultAgent({ config });
+      return useUserStore.getState().updateDefaultAgent({ config });
     }
 
     return SessionModel.updateConfig(activeId, config);
+  }
+
+  async updateSessionMeta(
+    activeId: string,
+    meta: Partial<MetaData>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _?: AbortSignal,
+  ) {
+    // inbox 不允许修改 meta
+    if (activeId === INBOX_SESSION_ID) return;
+
+    return SessionModel.update(activeId, { meta });
+  }
+
+  async updateSessionChatConfig(
+    activeId: string,
+    config: DeepPartial<LobeAgentChatConfig>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _?: AbortSignal,
+  ) {
+    return this.updateSessionConfig(activeId, { chatConfig: config });
   }
 
   async removeSession(id: string) {

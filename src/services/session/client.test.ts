@@ -205,7 +205,7 @@ describe('SessionService', () => {
   describe('updateSessionConfig', () => {
     it('should update the config of a session', async () => {
       // Setup
-      const newConfig = { compressThreshold: 2 } as LobeAgentConfig;
+      const newConfig = { model: 'abc' } as LobeAgentConfig;
       (SessionModel.updateConfig as Mock).mockResolvedValue({ ...mockSession, config: newConfig });
 
       // Execute
@@ -240,6 +240,32 @@ describe('SessionService', () => {
       // Assert
       expect(SessionModel.count).toHaveBeenCalled();
       expect(result).toBe(1);
+    });
+  });
+
+  describe('hasSessions', () => {
+    it('should return false if no sessions exist', async () => {
+      // Setup
+      (SessionModel.count as Mock).mockResolvedValue(0);
+
+      // Execute
+      const result = await sessionService.hasSessions();
+
+      // Assert
+      expect(SessionModel.count).toHaveBeenCalled();
+      expect(result).toBe(false);
+    });
+
+    it('should return true if sessions exist', async () => {
+      // Setup
+      (SessionModel.count as Mock).mockResolvedValue(1);
+
+      // Execute
+      const result = await sessionService.hasSessions();
+
+      // Assert
+      expect(SessionModel.count).toHaveBeenCalled();
+      expect(result).toBe(true);
     });
   });
 

@@ -6,6 +6,8 @@ import { SessionGroups } from '@/types/session';
 import { DB_SessionGroup } from '../../schemas/sessionGroup';
 import { SessionGroupModel } from '../sessionGroup';
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 describe('SessionGroupModel', () => {
   let sessionGroupData: DB_SessionGroup;
 
@@ -89,6 +91,16 @@ describe('SessionGroupModel', () => {
         expect(session.group).not.toEqual(createdGroup.id);
       });
     });
+    it('should update associated sessions to default group when a session group is deleted', async () => {
+      const createdGroup = await SessionGroupModel.create(
+        sessionGroupData.name,
+        sessionGroupData.sort,
+      );
+      const sessionId = await SessionModel.create('agent', {}, createdGroup.id);
+      await SessionGroupModel.delete(createdGroup.id);
+      const updatedSession = await SessionModel.findById(sessionId.id);
+      expect(updatedSession.group).toEqual('default');
+    });
   });
 
   describe('query', () => {
@@ -125,9 +137,14 @@ describe('SessionGroupModel', () => {
 
     it('should return session groups sorted by sort field first and then by createdAt', async () => {
       const group0 = await SessionGroupModel.create('group0');
+      await sleep(10);
       const group1 = await SessionGroupModel.create('group1', 1);
+      await sleep(10);
       const group2 = await SessionGroupModel.create('group2');
+      await sleep(10);
       const group3 = await SessionGroupModel.create('group3', 2);
+      await sleep(10);
+
       const fetchedGroups = await SessionGroupModel.query();
       expect(fetchedGroups[0].id).toEqual(group1.id);
       expect(fetchedGroups[1].id).toEqual(group3.id);
@@ -152,6 +169,14 @@ describe('SessionGroupModel', () => {
       const fetchedGroups = await SessionGroupModel.query();
       expect(fetchedGroups[0].id).toEqual(group2.id);
       expect(fetchedGroups[1].id).toEqual(group1.id);
+    });
+
+    it('should sort session groups correctly when only b has a sort value', async () => {
+      const groupA = await SessionGroupModel.create('groupA'); // sort undefined
+      const groupB = await SessionGroupModel.create('groupB', 1); // sort defined
+      const fetchedGroups = await SessionGroupModel.query();
+      expect(fetchedGroups[0].id).toEqual(groupB.id);
+      expect(fetchedGroups[1].id).toEqual(groupA.id);
     });
   });
 

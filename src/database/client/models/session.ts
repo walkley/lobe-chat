@@ -81,15 +81,15 @@ class _SessionModel extends BaseModel {
   async queryByKeyword(keyword: string): Promise<LobeSessions> {
     if (!keyword) return [];
 
-    console.time('queryByKeyword');
+    const startTime = Date.now();
     const keywordLowerCase = keyword.toLowerCase();
 
     // First, filter sessions by title and description
     const matchingSessionsPromise = this.table
       .filter((session) => {
         return (
-          session.meta.title.toLowerCase().includes(keywordLowerCase) ||
-          session.meta.description.toLowerCase().includes(keywordLowerCase)
+          session.meta.title?.toLowerCase().includes(keywordLowerCase) ||
+          session.meta.description?.toLowerCase().includes(keywordLowerCase)
         );
       })
       .toArray();
@@ -112,7 +112,7 @@ class _SessionModel extends BaseModel {
     //  match topics
     const matchingTopicsPromise = this.db.topics
       .filter((topic) => {
-        return topic.title.toLowerCase().includes(keywordLowerCase);
+        return topic.title?.toLowerCase().includes(keywordLowerCase);
       })
       .toArray();
 
@@ -139,7 +139,7 @@ class _SessionModel extends BaseModel {
       .anyOf([...combinedSessionIds])
       .toArray();
 
-    console.timeEnd('queryByKeyword');
+    console.log(`检索到 ${items.length} 项，耗时 ${Date.now() - startTime}ms`);
     return this.mapToAgentSessions(items);
   }
 
@@ -246,16 +246,20 @@ class _SessionModel extends BaseModel {
   private mapToDB_Session(session: LobeAgentSession): DBModel<DB_Session> {
     return {
       ...session,
+      createdAt: session.createdAt?.valueOf(),
       group: session.group || SessionDefaultGroup.Default,
       pinned: session.pinned ? 1 : 0,
+      updatedAt: session.updatedAt?.valueOf(),
     };
   }
 
   private DB_SessionToAgentSession(session: DBModel<DB_Session>) {
     return {
       ...session,
+      createdAt: new Date(session.createdAt),
       model: session.config.model,
       pinned: !!session.pinned,
+      updatedAt: new Date(session.updatedAt),
     } as LobeAgentSession;
   }
 

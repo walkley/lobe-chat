@@ -4,6 +4,7 @@
   },
   "agentDefaultMessage": "Cześć, jestem **{{name}}**, możesz od razu zacząć ze mną rozmawiać, lub udoskonalić moje informacje, przechodząc do [Ustawień asystenta](/chat/settings#session={{id}}).",
   "agentDefaultMessageWithSystemRole": "Cześć, jestem **{{name}}**, {{systemRole}}, zacznijmy rozmowę!",
+  "agentsAndConversations": "Agenci i rozmowy",
   "backToBottom": "Przewiń na dół",
   "clearCurrentMessages": "Wyczyść bieżącą rozmowę",
   "confirmClearCurrentMessages": "Czy na pewno chcesz wyczyścić bieżącą rozmowę? Tej operacji nie można cofnąć.",
@@ -21,7 +22,6 @@
   "emptyAgent": "Brak asystenta",
   "historyRange": "Zakres historii",
   "inbox": {
-    "defaultMessage": "Cześć, jestem twoim inteligentnym asystentem, możesz zadać mi dowolne pytanie, postaram się na nie odpowiedzieć. Jeśli potrzebujesz bardziej profesjonalnego lub spersonalizowanego asystenta, kliknij `+`, aby utworzyć niestandardowego asystenta.",
     "desc": "Włącz klastry mózgów, rozpal iskrę myślenia. Twój inteligentny asystent, gotowy do rozmowy o wszystkim.",
     "title": "Pogadajmy sobie"
   },
@@ -50,7 +50,7 @@
   "sessionGroup": {
     "config": "Zarządzanie grupami",
     "confirmRemoveGroupAlert": "Czy na pewno chcesz usunąć tę grupę? Po usunięciu asystenci z tej grupy zostaną przeniesieni do domyślnej listy. Potwierdź swoje działanie.",
-    "createAgentSuccess": "Utworzono asystenta pomyślnie",
+    "createAgentSuccess": "Utworzenie asystenta zakończone sukcesem",
     "createGroup": "Dodaj nową grupę",
     "createSuccess": "Utworzono pomyślnie",
     "creatingAgent": "Tworzenie asystenta...",
@@ -59,7 +59,7 @@
     "newGroup": "Nowa grupa",
     "rename": "Zmień nazwę grupy",
     "renameSuccess": "Zmiana nazwy pomyślna",
-    "sortSuccess": "Pomyślnie posortowano ponownie",
+    "sortSuccess": "Pomyślne ponowne sortowanie",
     "sorting": "Aktualizacja sortowania grupy...",
     "tooLong": "Nazwa grupy musi mieć od 1 do 20 znaków"
   },
@@ -84,6 +84,7 @@
     "chats": "Rozmowy",
     "rest": "Pozostałe",
     "systemRole": "Rola systemowa",
+    "title": "Szczegóły tokena",
     "tools": "Narzędzia",
     "total": "Razem",
     "used": "Wykorzystane"

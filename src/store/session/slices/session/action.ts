@@ -1,5 +1,5 @@
+import isEqual from 'fast-deep-equal';
 import { t } from 'i18next';
-import { isEqual } from 'lodash-es';
 import useSWR, { SWRResponse, mutate } from 'swr';
 import { DeepPartial } from 'utility-types';
 import { StateCreator } from 'zustand/vanilla';
@@ -8,9 +8,9 @@ import { message } from '@/components/AntdStaticMethods';
 import { DEFAULT_AGENT_LOBE_SESSION, INBOX_SESSION_ID } from '@/const/session';
 import { useClientDataSWR } from '@/libs/swr';
 import { sessionService } from '@/services/session';
-import { useGlobalStore } from '@/store/global';
-import { settingsSelectors } from '@/store/global/selectors';
 import { SessionStore } from '@/store/session';
+import { useUserStore } from '@/store/user';
+import { settingsSelectors } from '@/store/user/selectors';
 import { MetaData } from '@/types/meta';
 import {
   ChatSessionList,
@@ -70,7 +70,9 @@ export interface SessionAction {
    */
   removeSession: (id: string) => Promise<void>;
 
-  useFetchSessions: () => SWRResponse<ChatSessionList>;
+  updateSearchKeywords: (keywords: string) => void;
+
+  useFetchSessions: (isLogin: boolean | undefined) => SWRResponse<ChatSessionList>;
   useSearchSessions: (keyword?: string) => SWRResponse<any>;
 
   internal_dispatchSessions: (payload: SessionDispatch) => void;
@@ -109,7 +111,7 @@ export const createSessionSlice: StateCreator<
     // merge the defaultAgent in settings
     const defaultAgent = merge(
       DEFAULT_AGENT_LOBE_SESSION,
-      settingsSelectors.defaultAgent(useGlobalStore.getState()),
+      settingsSelectors.defaultAgent(useUserStore.getState()),
     );
 
     const newSession: LobeAgentSession = merge(defaultAgent, agent);
@@ -169,6 +171,13 @@ export const createSessionSlice: StateCreator<
     }
   },
 
+  updateSearchKeywords: (keywords) => {
+    set(
+      { isSearching: !!keywords, sessionSearchKeywords: keywords },
+      false,
+      n('updateSearchKeywords'),
+    );
+  },
   updateSessionGroupId: async (sessionId, group) => {
     await get().internal_updateSession(sessionId, { group });
   },
@@ -179,28 +188,42 @@ export const createSessionSlice: StateCreator<
 
     const { activeId, refreshSessions } = get();
 
-    await sessionService.updateSession(activeId, { meta });
+    const abortController = get().signalSessionMeta as AbortController;
+    if (abortController) abortController.abort('canceled');
+    const controller = new AbortController();
+    set({ signalSessionMeta: controller }, false, 'updateSessionMetaSignal');
+
+    await sessionService.updateSessionMeta(activeId, meta, controller.signal);
     await refreshSessions();
   },
 
-  useFetchSessions: () =>
-    useClientDataSWR<ChatSessionList>(FETCH_SESSIONS_KEY, sessionService.getGroupedSessions, {
-      onSuccess: (data) => {
-        if (
-          get().isSessionsFirstFetchFinished &&
-          isEqual(get().sessions, data.sessions) &&
-          isEqual(get().sessionGroups, data.sessionGroups)
-        )
-          return;
+  useFetchSessions: (isLogin) =>
+    useClientDataSWR<ChatSessionList>(
+      [FETCH_SESSIONS_KEY, isLogin],
+      () => sessionService.getGroupedSessions(),
+      {
+        fallbackData: {
+          sessionGroups: [],
+          sessions: [],
+        },
+        onSuccess: (data) => {
+          if (
+            get().isSessionsFirstFetchFinished &&
+            isEqual(get().sessions, data.sessions) &&
+            isEqual(get().sessionGroups, data.sessionGroups)
+          )
+            return;
 
-        get().internal_processSessions(
-          data.sessions,
-          data.sessionGroups,
-          n('useFetchSessions/updateData') as any,
-        );
-        set({ isSessionsFirstFetchFinished: true }, false, n('useFetchSessions/onSuccess', data));
+          get().internal_processSessions(
+            data.sessions,
+            data.sessionGroups,
+            n('useFetchSessions/updateData') as any,
+          );
+          set({ isSessionsFirstFetchFinished: true }, false, n('useFetchSessions/onSuccess', data));
+        },
+        suspense: true,
       },
-    }),
+    ),
   useSearchSessions: (keyword) =>
     useSWR<LobeSessions>(
       [SEARCH_SESSIONS_KEY, keyword],
@@ -247,6 +270,6 @@ export const createSessionSlice: StateCreator<
     );
   },
   refreshSessions: async () => {
-    await mutate(FETCH_SESSIONS_KEY);
+    await mutate([FETCH_SESSIONS_KEY, true]);
   },
 });
